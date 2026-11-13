@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive Expense Tracker Web Application built with Vanilla HTML, CSS, and JavaScript." />
+  <title>SpendWise | Interactive Expense Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Top Navigation / Header -->
+  <header class="app-header">
+    <div class="container header-content">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </div>
+        <div>
+          <h1>SpendWise</h1>
+          <p class="subtitle">Personal Finance &amp; Expense Analytics</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" id="btn-seed-data" class="btn btn-outline btn-sm" title="Load sample transactions for testing">
+          Load Demo Data
+        </button>
+        <button type="button" id="btn-export-csv" class="btn btn-outline btn-sm" title="Export current filtered view to CSV">
+          Export CSV
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Workspace -->
+  <main class="container main-workspace">
+
+    <!-- Spending Summary Cards (Real-time Filtered Metrics) -->
+    <section class="summary-section" aria-label="Spending Summary">
+      <article class="summary-card primary-card">
+        <div class="card-header">
+          <span class="card-label">Filtered Total Spending</span>
+          <span class="card-icon" aria-hidden="true">$</span>
+        </div>
+        <p class="card-value" id="summary-total-amount" aria-live="polite">$0.00</p>
+        <span class="card-subtext" id="summary-period-label">Showing all matching records</span>
+      </article>
+
+      <article class="summary-card">
+        <div class="card-header">
+          <span class="card-label">Transactions</span>
+          <span class="card-icon" aria-hidden="true">#</span>
+        </div>
+        <p class="card-value" id="summary-total-count" aria-live="polite">0</p>
+        <span class="card-subtext" id="summary-average-amount">Avg: $0.00 / expense</span>
+      </article>
+
+      <article class="summary-card">
+        <div class="card-header">
+          <span class="card-label">Highest Expense</span>
+          <span class="card-icon" aria-hidden="true">&uarr;</span>
+        </div>
+        <p class="card-value" id="summary-highest-amount" aria-live="polite">$0.00</p>
+        <span class="card-subtext" id="summary-highest-category">No records yet</span>
+      </article>
+
+      <!-- Visual Category Breakdown Card -->
+      <article class="summary-card breakdown-card">
+        <div class="card-header">
+          <span class="card-label">Category Breakdown</span>
+          <span class="card-subtext" id="top-category-badge">Top: None</span>
+        </div>
+        <div class="progress-bar-stacked" id="category-progress-bar" aria-label="Category spending distribution">
+          <!-- Populated dynamically via JS -->
+        </div>
+        <div class="category-legend" id="category-legend">
+          <span class="legend-empty">Add expenses to view category distribution</span>
+        </div>
+      </article>
+    </section>
+
+    <!-- Core Two-Column Dashboard Grid -->
+    <div class="dashboard-grid">
+
+      <!-- Left Column: Expense Entry / Edit Form -->
+      <aside class="form-panel">
+        <section class="panel-card" id="form-card" aria-labelledby="form-heading">
+          <div class="panel-header">
+            <h2 id="form-heading">Add New Expense</h2>
+            <span class="edit-badge hidden" id="edit-mode-badge">Editing Mode</span>
+          </div>
+
+          <form id="expense-form" novalidate>
+            <!-- Description Input -->
+            <div class="form-group">
+              <label for="expense-description">Description <span class="required">*</span></label>
+              <input
+                type="text"
+                id="expense-description"
+                name="description"
+                placeholder="e.g., Weekly Grocery Run"
+                maxlength="80"
+                autocomplete="off"
+                required
+              />
+              <small class="error-msg" id="error-description" role="alert"></small>
+            </div>
+
+            <!-- Amount Input -->
+            <div class="form-group">
+              <label for="expense-amount">Amount (USD) <span class="required">*</span></label>
+              <div class="input-with-prefix">
+                <span class="input-prefix" aria-hidden="true">$</span>
+                <input
+                  type="number"
+                  id="expense-amount"
+                  name="amount"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0.01"
+                  max="1000000"
+                  required
+                />
+              </div>
+              <small class="error-msg" id="error-amount" role="alert"></small>
+            </div>
+
+            <!-- Category Select -->
+            <div class="form-group">
+              <label for="expense-category">Category <span class="required">*</span></label>
+              <select id="expense-category" name="category" required>
+                <option value="" disabled selected>Select a category</option>
+                <option value="Food & Dining">Food &amp; Dining</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Housing & Utilities">Housing &amp; Utilities</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Education">Education</option>
+                <option value="Other">Other</option>
+              </select>
+              <small class="error-msg" id="error-category" role="alert"></small>
+            </div>
+
+            <!-- Date Input -->
+            <div class="form-group">
+              <label for="expense-date">Date <span class="required">*</span></label>
+              <input
+                type="date"
+                id="expense-date"
+                name="date"
+                required
+              />
+              <small class="error-msg" id="error-date" role="alert"></small>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+              <button type="submit" id="btn-submit" class="btn btn-primary btn-block">
+                Add Expense
+              </button>
+              <button type="button" id="btn-cancel-edit" class="btn btn-secondary btn-block hidden">
+                Cancel Edit
+              </button>
+            </div>
+          </form>
+        </section>
+      </aside>
+
+      <!-- Right Column: Filters, Sorting & Expense Listing -->
+      <section class="list-panel" aria-labelledby="transactions-heading">
+        
+        <!-- Filter & Sort Controls Bar -->
+        <div class="panel-card filter-bar">
+          <div class="filter-bar-top">
+            <h2 id="transactions-heading">Expense Records</h2>
+            <button type="button" id="btn-reset-filters" class="btn-text" title="Clear all active filters">
+              Reset Filters
+            </button>
+          </div>
+
+          <div class="filters-grid">
+            <!-- Search Filter -->
+            <div class="filter-item">
+              <label for="filter-search">Search Description</label>
+              <input
+                type="search"
+                id="filter-search"
+                placeholder="Filter by keyword..."
+                autocomplete="off"
+              />
+            </div>
+
+            <!-- Category Filter -->
+            <div class="filter-item">
+              <label for="filter-category">Category</label>
+              <select id="filter-category">
+                <option value="all">All Categories</option>
+                <option value="Food & Dining">Food &amp; Dining</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Housing & Utilities">Housing &amp; Utilities</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Education">Education</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- Start Date Filter -->
+            <div class="filter-item">
+              <label for="filter-start-date">From Date</label>
+              <input type="date" id="filter-start-date" />
+            </div>
+
+            <!-- End Date Filter -->
+            <div class="filter-item">
+              <label for="filter-end-date">To Date</label>
+              <input type="date" id="filter-end-date" />
+            </div>
+
+            <!-- Sort Selector -->
+            <div class="filter-item">
+              <label for="sort-by">Sort By</label>
+              <select id="sort-by">
+                <option value="date-desc">Date (Newest First)</option>
+                <option value="date-asc">Date (Oldest First)</option>
+                <option value="amount-desc">Amount (Highest First)</option>
+                <option value="amount-asc">Amount (Lowest First)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense List Container -->
+        <div class="panel-card transactions-container">
+          <!-- Responsive List Header (Visible on Tablet/Desktop) -->
+          <div class="expense-list-header" aria-hidden="true">
+            <span>Details</span>
+            <span>Category</span>
+            <span>Date</span>
+            <span class="text-right">Amount</span>
+            <span class="text-right">Actions</span>
+          </div>
+
+          <!-- Dynamic Expense Items List -->
+          <ul id="expense-list" class="expense-list" aria-live="polite">
+            <!-- Expense items injected via JavaScript -->
+          </ul>
+
+          <!-- Empty State View -->
+          <div id="empty-state" class="empty-state hidden">
+            <div class="empty-state-icon" aria-hidden="true">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+            </div>
+            <h3 id="empty-state-title">No expenses recorded yet</h3>
+            <p id="empty-state-message">
+              Use the form on the left to log your first expense, or click "Load Demo Data" in the top bar to explore.
+            </p>
+          </div>
+
+          <!-- List Footer Actions -->
+          <div id="list-footer" class="list-footer hidden">
+            <span id="showing-count-text">Showing 0 expenses</span>
+            <button type="button" id="btn-clear-all" class="btn-danger-text">
+              Clear All Data
+            </button>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Application Footer -->
+  <footer class="app-footer">
+    <div class="container">
+      <p>Built with Vanilla HTML5, CSS3 &amp; ES6+ JavaScript &bull; Data persisted locally via Browser LocalStorage</p>
+    </div>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+</html>
